@@ -3,15 +3,14 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-// Load env vars from server/.env (works on Vercel if you also set env vars in dashboard)
-dotenv.config();
-
 const productsRouter = require('../routes/products');
 const authRouter = require('../routes/auth');
 
+dotenv.config();
+
 const app = express();
 
-// CORS configuration – allow your deployed frontend URL
+// CORS
 const allowedOrigin = process.env.CLIENT_URL || process.env.FRONTEND_URL;
 app.use(
   cors({
@@ -23,36 +22,35 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Mount routers (note: Vercel adds /api prefix automatically)
-app.use('/products', productsRouter);
-app.use('/auth', authRouter);
+// Mount routes under /api/*
+// Because this function is mounted at /api on Vercel, we keep the /api prefix here
+// so that requests to /api/products, /api/auth, /api/health are handled correctly.
+app.use('/api/products', productsRouter);
+app.use('/api/auth', authRouter);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Serverless API is running' });
 });
 
-// Keep a single MongoDB connection across invocations
 let isConnected = false;
 
 async function connectToDatabase() {
   if (isConnected) return;
-
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/sarhad-corporation';
-
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('MONGODB_URI is not set in environment variables');
+  }
   await mongoose.connect(uri);
-  isConnected = true;
-  // eslint-disable-next-line no-console
-  console.log('MongoDB connected (serverless)');
+    isConnected = true;
+    console.log('MongoDB connected (serverless)');
 }
 
-// Vercel serverless function handler
 module.exports = async (req, res) => {
   try {
     await connectToDatabase();
     return app(req, res);
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('API error:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
