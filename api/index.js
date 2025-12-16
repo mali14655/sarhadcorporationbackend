@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 
 const productsRouter = require('../routes/products');
 const authRouter = require('../routes/auth');
+const heroRouter = require('../routes/hero');
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 // so that requests to /api/products, /api/auth, /api/health are handled correctly.
 app.use('/api/products', productsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/hero', heroRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
