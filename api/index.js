@@ -17,25 +17,40 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://sarhadcorporation.vercel.app',
   'http://localhost:3000',
+  'http://localhost:3001',
 ].filter(Boolean);
+
+// Log allowed origins for debugging
+console.log('CORS Allowed Origins:', allowedOrigins);
+console.log('CLIENT_URL:', process.env.CLIENT_URL);
+console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
 
 app.use(
   cors({
     origin: function (origin, callback) {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        console.log('CORS: No origin header, allowing request');
+        return callback(null, true);
+      }
       
-      // Allow all origins if no specific origins are set (development)
-      if (allowedOrigins.length === 0) {
+      console.log('CORS: Request from origin:', origin);
+      
+      // Always allow the specific frontend URL
+      if (origin === 'https://sarhadcorporation.vercel.app' || 
+          origin.startsWith('https://sarhadcorporation')) {
+        console.log('CORS: Allowing sarhadcorporation.vercel.app');
         return callback(null, true);
       }
       
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
+        console.log('CORS: Origin in allowed list');
         callback(null, true);
       } else {
-        // In production, you might want to reject unknown origins
-        // For now, allow all to fix CORS issue
+        // For now, allow all origins to fix CORS issue
+        // In production, you can restrict this
+        console.log('CORS: Allowing origin (permissive mode)');
         callback(null, true);
       }
     },
@@ -51,8 +66,9 @@ app.use(
 // Handle preflight requests
 app.options('*', cors());
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase body size limit for file uploads (50MB)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Mount routes under /api/*
 // Because this function is mounted at /api on Vercel, we keep the /api prefix here
@@ -81,6 +97,20 @@ async function connectToDatabase() {
 
 module.exports = async (req, res) => {
   try {
+    // Set CORS headers explicitly before handling request
+    const origin = req.headers.origin;
+    if (origin && (origin.includes('sarhadcorporation.vercel.app') || origin.includes('localhost'))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+    }
+    
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+    
     await connectToDatabase();
     return app(req, res);
   } catch (err) {

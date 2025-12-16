@@ -15,8 +15,13 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
   });
 }
 
-// Multer for in-memory file uploads
-const upload = multer({ storage: multer.memoryStorage() });
+// Multer for in-memory file uploads - increase file size limit to 50MB
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
+  },
+});
 
 // GET /api/hero - Get all hero slides
 router.get('/', async (req, res) => {
@@ -32,12 +37,24 @@ router.get('/', async (req, res) => {
 // POST /api/hero/upload-image (protected) - Upload hero image
 router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
   try {
+    // Set CORS headers explicitly
+    const origin = req.headers.origin;
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    
     if (!process.env.CLOUDINARY_CLOUD_NAME) {
       return res.status(500).json({ message: 'Cloudinary is not configured on the server.' });
     }
 
     if (!req.file) {
       return res.status(400).json({ message: 'No image provided.' });
+    }
+    
+    // Check file size (50MB limit)
+    if (req.file.size > 50 * 1024 * 1024) {
+      return res.status(413).json({ message: 'File too large. Maximum size is 50MB.' });
     }
 
     const uploadPromise = new Promise((resolve, reject) => {
