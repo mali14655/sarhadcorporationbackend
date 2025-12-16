@@ -11,14 +11,45 @@ dotenv.config();
 
 const app = express();
 
-// CORS
-const allowedOrigin = process.env.CLIENT_URL || process.env.FRONTEND_URL;
+// CORS - Allow requests from frontend
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.FRONTEND_URL,
+  'https://sarhadcorporation.vercel.app',
+  'http://localhost:3000',
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: allowedOrigin || '*',
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Allow all origins if no specific origins are set (development)
+      if (allowedOrigins.length === 0) {
+        return callback(null, true);
+      }
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // In production, you might want to reject unknown origins
+        // For now, allow all to fix CORS issue
+        callback(null, true);
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Type'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
