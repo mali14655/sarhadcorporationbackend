@@ -44,12 +44,19 @@ router.post('/upload-image', auth, upload.single('image'), async (req, res) => {
       res.setHeader('Access-Control-Allow-Credentials', 'true');
     }
     
+    console.log('Upload request received');
+    console.log('Has file:', !!req.file);
+    console.log('File field name:', req.file?.fieldname);
+    console.log('Request body keys:', Object.keys(req.body));
+    console.log('Content-Type:', req.headers['content-type']);
+    
     if (!process.env.CLOUDINARY_CLOUD_NAME) {
       return res.status(500).json({ message: 'Cloudinary is not configured on the server.' });
     }
 
     if (!req.file) {
-      return res.status(400).json({ message: 'No image provided.' });
+      console.log('No file in request');
+      return res.status(400).json({ message: 'No image provided. Please select an image file.' });
     }
     
     // Check file size (50MB limit)
