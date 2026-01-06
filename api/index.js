@@ -16,6 +16,8 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL,
   'https://sarhadcorporation.vercel.app',
+  'https://sarhadcorporation.com',
+  'https://www.sarhadcorporation.com',
   'http://localhost:3000',
   'http://localhost:3001',
 ].filter(Boolean);
@@ -35,14 +37,7 @@ app.use(
       }
       
       console.log('CORS: Request from origin:', origin);
-      
-      // Always allow the specific frontend URL
-      if (origin === 'https://sarhadcorporation.vercel.app' || 
-          origin.startsWith('https://sarhadcorporation')) {
-        console.log('CORS: Allowing sarhadcorporation.vercel.app');
-        return callback(null, true);
-      }
-      
+
       // Check if origin is in allowed list
       if (allowedOrigins.includes(origin)) {
         console.log('CORS: Origin in allowed list');
@@ -99,7 +94,12 @@ module.exports = async (req, res) => {
   try {
     // Set CORS headers explicitly before handling request
     const origin = req.headers.origin;
-    if (origin && (origin.includes('sarhadcorporation.vercel.app') || origin.includes('localhost'))) {
+    if (
+      origin &&
+      (origin.includes('sarhadcorporation.vercel.app') ||
+        origin.includes('sarhadcorporation.com') ||
+        origin.includes('localhost'))
+    ) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
