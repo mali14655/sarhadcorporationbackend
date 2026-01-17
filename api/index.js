@@ -92,18 +92,26 @@ async function connectToDatabase() {
 
 module.exports = async (req, res) => {
   try {
-    // Set CORS headers explicitly before handling request
+    // Set CORS headers explicitly for all requests
     const origin = req.headers.origin;
+    
+    // Allow all origins from our allowed list
     if (
-      origin &&
-      (origin.includes('sarhadcorporation.vercel.app') ||
-        origin.includes('sarhadcorporation.com') ||
-        origin.includes('localhost'))
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.includes('sarhadcorporation.vercel.app') ||
+      origin.includes('sarhadcorporation.com') ||
+      origin.includes('localhost')
     ) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
+      if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+      } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+      res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
     }
     
     // Handle preflight OPTIONS request
